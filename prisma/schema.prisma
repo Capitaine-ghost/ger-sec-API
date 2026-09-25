@@ -1,0 +1,110 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+model Users{
+  id String @id @default(uuid()) 
+  nomUtilisateur String @unique 
+  nom String?
+  prenom String
+  motDePasse String
+  secretQuestion String?
+  secretReponse String? 
+  profilImg String?
+
+  historiLog LogHistoriques[]
+}
+
+model EtablissementSettings{
+  id  Int @unique @default(autoincrement())
+  nom String
+  adresse String?
+  contact String @db.VarChar(12)
+  autreContact String @db.VarChar(12)
+  lienLogo String @db.Text()
+  etabSlogan String?
+}
+// Une fourniture peut être associée à plusieur vente
+// Une Fourniture peut être associée à une ou plusieurs prestation
+
+
+// Une prestation est Lié à un type de prestation
+// a un type de prestation nous pouvons avoir plusiers prestation
+
+// a une prestation nous pouvons avoir plusieur 
+model Fournitures{
+   id String @id @default(uuid())
+   designation String 
+   stock Int @default(1)
+   prixAchat Float
+   prixUnitVente Float
+   uniteMesure String
+   dateAppro DateTime @default(now())
+   ventes VenteFournitures[]
+}
+
+model TypePrestations{
+   id String @id @default(uuid())
+   designation String
+   quantiteMin Int
+   prixUnit Float
+   prestations Prestations[]
+}
+
+model Prestations{
+  id  String @id @default(uuid())
+  designation String
+  creeLe DateTime @default(now())
+  quantite Int @default(1)
+  prixUnit Float
+  type TypePrestations @relation(fields: [typePrestationId], references: [id])
+  typePrestationId String
+
+  Transaction TransactionCaisses? @relation()
+}
+
+
+model TransactionCaisses{
+  id String @id @default(uuid())
+  designation String
+  type String
+  montant Float
+  creeLe DateTime @default(now())
+
+  prestationId String? @unique
+  prestation Prestations? @relation(fields: [prestationId], references: [id])
+
+  
+  venteId String? @unique
+  vente VenteFournitures? @relation(fields: [venteId], references: [id])
+}
+
+model VenteFournitures{
+   id String @id @default(uuid())
+   creeLe DateTime @default(now())
+   quantite Float
+   prixVente Float?
+   fournitureId String
+   fourniture Fournitures @relation(fields: [fournitureId], references: [id])
+  
+  transaction TransactionCaisses? @relation()
+}
+
+model LogHistoriques{
+  id String @id @default(uuid())
+  creeLe DateTime @default(now())
+  action String
+  objetId String
+
+  userId String
+  user Users @relation(fields: [userId],references: [id])
+}
