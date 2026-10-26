@@ -5,23 +5,25 @@
 
 generator client {
   provider = "prisma-client"
-  output   = "../generated/prisma"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "mysql"
 }
 model Users{
-  id String @id @default(uuid()) 
+  id String @unique @id @default(uuid()) 
   nomUtilisateur String @unique 
   nom String?
-  prenom String
+  prenom String?
   motDePasse String
   secretQuestion String?
   secretReponse String? 
   profilImg String?
+  role String @default("caissière")
 
   historiLog LogHistoriques[]
+  estActif Boolean @default(true)
 }
 
 model EtablissementSettings{
@@ -42,26 +44,50 @@ model EtablissementSettings{
 
 // a une prestation nous pouvons avoir plusieur 
 model Fournitures{
-   id String @id @default(uuid())
+   id String @id @default(uuid()) @unique
    designation String 
    stock Int @default(1)
    prixAchat Float
    prixUnitVente Float
    uniteMesure String
-   dateAppro DateTime @default(now())
+   nombreParLot Int @default(50)
    ventes VenteFournitures[]
+   typePrestationFournitures TypePrestationFourniture[]
+   estActif Boolean @default(true)
+  approvisionement Approvisionnement[]
+}
+
+model Approvisionnement {
+  id String @id @default(uuid())
+  date DateTime @default(now())
+  quantite Int
+  uniteMesure String
+  fournitureId String
+  fourniture Fournitures @relation(fields: [fournitureId], references: [id])
 }
 
 model TypePrestations{
-   id String @id @default(uuid())
+   id String @id @default(uuid()) @unique
    designation String
    quantiteMin Int
    prixUnit Float
-   prestations Prestations[]
+   prestations Prestations[] @relation()
+   commandes Commandes[] @relation()
+   typePrestationFourniture TypePrestationFourniture[] @relation()
+   estActif Boolean @default(true)
+}
+
+model TypePrestationFourniture {
+  id String @id @default(cuid())
+  quantite  Int @default(1)
+  typePrestationId String
+  typePrestation TypePrestations @relation(fields: [typePrestationId], references: [id])
+  fournitureId String
+  fourniture Fournitures @relation(fields: [fournitureId], references: [id])
 }
 
 model Prestations{
-  id  String @id @default(uuid())
+  id  String @id @default(uuid()) @unique
   designation String
   creeLe DateTime @default(now())
   quantite Int @default(1)
@@ -70,11 +96,13 @@ model Prestations{
   typePrestationId String
 
   Transaction TransactionCaisses? @relation()
+  estActif Boolean @default(true)
+  benefice Float?
 }
 
 
 model TransactionCaisses{
-  id String @id @default(uuid())
+  id String @id @default(uuid()) @unique
   designation String
   type String
   montant Float
@@ -86,25 +114,45 @@ model TransactionCaisses{
   
   venteId String? @unique
   vente VenteFournitures? @relation(fields: [venteId], references: [id])
+  
+    commandeId String?  @unique
+    Commande Commandes? @relation(fields:[commandeId], references:[id])
+    estActif Boolean @default(true)
 }
 
 model VenteFournitures{
-   id String @id @default(uuid())
+   id String @id @default(uuid()) @unique
    creeLe DateTime @default(now())
    quantite Float
    prixVente Float?
    fournitureId String
    fourniture Fournitures @relation(fields: [fournitureId], references: [id])
-  
   transaction TransactionCaisses? @relation()
+  estActif Boolean @default(true)
+  benefice Float?
+
 }
 
 model LogHistoriques{
-  id String @id @default(uuid())
+  id String @id @default(uuid()) @unique
   creeLe DateTime @default(now())
   action String
   objetId String
 
   userId String
   user Users @relation(fields: [userId],references: [id])
+}
+
+model Commandes{
+  id String @id @default(cuid()) @unique
+  creeLe DateTime @default(now())
+  typePrestationId String @unique
+  transactionId String?
+  quantite Int @default(1)
+  prixUnitaireConclu Float?
+  typeprestation TypePrestations @relation(fields: [typePrestationId], references: [id])
+  Transaction TransactionCaisses[] @relation()
+  dateLivraison DateTime
+  estActif Boolean @default(true)
+  benefice Float? 
 }
