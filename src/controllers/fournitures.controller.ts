@@ -4,6 +4,9 @@ import MyPrismaDB from "../config/DB.ts";
 export const getAllFournitures = async(req: Request, res : Response)=>{
     try{
             const fournitures = await MyPrismaDB.fournitures.findMany({
+                include :{
+                        approvisionement : true
+                },
                 orderBy :[{designation : "asc"}, {prixAchat : "asc"}, {prixUnitVente : "asc"}]
             })
 
